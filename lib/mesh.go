@@ -48,10 +48,12 @@ func (m *Mesh) Buffer() {
 	m.setVertexArrayBuffer(gl.DYNAMIC_DRAW)
 	m.setElementArrayBuffer(gl.STATIC_DRAW)
 	m.enableVertexAttributes()
+	glh.OpenGLSentinel()
 
 	m.VertexArray.Unbind()
 	m.VertexArrayBuffer.Unbind(gl.ARRAY_BUFFER)
 	m.ElementArrayBuffer.Unbind(gl.ELEMENT_ARRAY_BUFFER)
+	glh.OpenGLSentinel()
 }
 
 func (m *Mesh) SubBuffer() {
@@ -118,5 +120,5 @@ func (m *Mesh) enableVertexAttributes() {
 func (m *Mesh) enableVertexAttribute(name string, length uint, size int, offset int) {
 	attrib := m.Shader.Program.GetAttribLocation(name)
 	attrib.EnableArray()
-	attrib.AttribPointer(length, gl.FLOAT, false, size, offset)
+	attrib.AttribPointer(length, gl.FLOAT, false, size, uintptr(offset))
 }

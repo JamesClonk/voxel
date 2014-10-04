@@ -1,13 +1,11 @@
 package main
 
 import (
-	"image"
-	"image/png"
 	"math"
-	"os"
 
 	. "github.com/JamesClonk/voxel/lib"
 	"github.com/go-gl/gl"
+	"github.com/go-gl/glh"
 	mgl "github.com/go-gl/mathgl/mgl32"
 )
 
@@ -18,9 +16,9 @@ var time float64
 
 const vertexShaderSource = `
 	#version 130
-		in vec4 position;
+		in vec3 position;
 		in vec4 color;
-		in vec3 norm;
+		in vec3 normal;
 		in vec2 textureCoordinate;
 
 		varying vec2 texCoord;
@@ -30,10 +28,10 @@ const vertexShaderSource = `
 		uniform mat4 model;
 		uniform mat4 view;
 		uniform mat4 projection;
-		uniform mat3 normal;
+		uniform mat3 normalMatrix;
 
 		float doColor() {
-			vec3 normalized  = normalize(normal * normalize(norm));
+			vec3 normalized  = normalize(normalMatrix * normalize(normal));
 			vec3 light = normalize(vec3(1.0, 1.0, 1.0));
 			return max(dot(normalized, light), 0.0);
 		}
@@ -42,7 +40,7 @@ const vertexShaderSource = `
 			diffuse = doColor();
 			inColor = color;
 			texCoord = textureCoordinate;
-			gl_Position = projection * view * model * position;
+			gl_Position = projection * view * model * vec4(position, 1);
 		}
 `
 
@@ -63,103 +61,18 @@ func main() {
 	app := NewSimpleApp(640, 480, "Voxel", draw)
 	defer app.Destroy()
 
-	cube := Vertices{
-		Vertex{
-			Position:          mgl.Vec3{1, -1, 1},
-			Color:             mgl.Vec4{1, 1, 0, 1},
-			Normal:            mgl.Vec3{1, -1, 1},
-			TextureCoordinate: mgl.Vec2{1, 1},
-		},
-		Vertex{
-			Position:          mgl.Vec3{1, 1, 1},
-			Color:             mgl.Vec4{0, 1, 0, 1},
-			Normal:            mgl.Vec3{1, 1, 1},
-			TextureCoordinate: mgl.Vec2{1, 0},
-		},
-		Vertex{
-			Position:          mgl.Vec3{-1, 1, 1},
-			Color:             mgl.Vec4{1, 1, 0, 1},
-			Normal:            mgl.Vec3{-1, 1, 1},
-			TextureCoordinate: mgl.Vec2{0, 0},
-		},
-		Vertex{
-			Position:          mgl.Vec3{-1, -1, 1},
-			Color:             mgl.Vec4{1, 0, 0, 1},
-			Normal:            mgl.Vec3{-1, -1, 1},
-			TextureCoordinate: mgl.Vec2{0, 1},
-		},
-		Vertex{
-			Position:          mgl.Vec3{1, -1, -1},
-			Color:             mgl.Vec4{0, 1, 0, 1},
-			Normal:            mgl.Vec3{1, -1, -1},
-			TextureCoordinate: mgl.Vec2{0, 1},
-		},
-		Vertex{
-			Position:          mgl.Vec3{1, 1, -1},
-			Color:             mgl.Vec4{0, 0, 1, 1},
-			Normal:            mgl.Vec3{1, 1, -1},
-			TextureCoordinate: mgl.Vec2{0, 0},
-		},
-		Vertex{
-			Position:          mgl.Vec3{-1, 1, -1},
-			Color:             mgl.Vec4{1, 0, 0, 1},
-			Normal:            mgl.Vec3{-1, 1, -1},
-			TextureCoordinate: mgl.Vec2{1, 0},
-		},
-		Vertex{
-			Position:          mgl.Vec3{-1, -1, -1},
-			Color:             mgl.Vec4{0, 0, 1, 1},
-			Normal:            mgl.Vec3{-1, -1, -1},
-			TextureCoordinate: mgl.Vec2{1, 1},
-		},
-	}
-	/*
-	       //6-------------/5
-	     //  .           // |
-	   //2--------------1   |
-	   //    .          |   |
-	   //    .          |   |
-	   //    .          |   |
-	   //    .          |   |
-	   //    7.......   |   /4
-	   //               | //
-	   //3--------------/0
-	*/
-
-	indices := []int32{
-		0, 1, 2, 3, // front
-		7, 6, 5, 4, // back
-		3, 2, 6, 7, // left
-		4, 5, 1, 0, // right
-		1, 5, 6, 2, // top
-		4, 0, 3, 7, // bottom
-	}
+	cube := NewCube(mgl.Vec4{1, 1, 1, 1})
 
 	shader = NewShader(vertexShaderSource, fragmentShaderSource)
+
 	mesh = NewMesh(shader)
-	mesh.Vertices = cube
-	mesh.Indices = indices
+	mesh.Vertices = cube.Vertices
+	mesh.Indices = cube.Indices
 	mesh.Buffer()
 
-	textureData = loadTexture("texture.png")
-	texture = NewTexture(24, 24, gl.NEAREST)
+	texture = NewTexture(16, 16, "data/grass.png", gl.NEAREST)
 
 	app.Start()
-}
-
-func loadTexture(filename string) *image.NRGBA {
-	texfile, err := os.Open(filename)
-	if err != nil {
-		panic(err)
-	}
-	defer texfile.Close()
-
-	img, err := png.Decode(texfile)
-	if err != nil {
-		panic(err)
-	}
-
-	return img.(*image.NRGBA)
 }
 
 func draw(app *App) {
@@ -186,7 +99,14 @@ func draw(app *App) {
 	normal := view.Mul4(model).Mat3().Inv().Transpose()
 	shader.Normal.UniformMatrix3fv(false, normal)
 
-	gl.DrawElements(gl.QUADS, 24, gl.UNSIGNED_INT, nil)
+	//mesh.SubBuffer()
+	mesh.Bind()
+	texture.Bind()
+	mesh.DrawElements(gl.QUADS)
+	texture.Bind()
+	mesh.Unbind()
 
 	shader.Unbind()
+
+	glh.OpenGLSentinel()
 }
