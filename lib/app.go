@@ -76,7 +76,7 @@ func (a *App) Start() {
 	for !a.Window.ShouldClose() {
 		a.ViewportFunc(a)
 
-		gl.ClearColor(0.1, 0.1, 0.1, 1)
+		gl.ClearColor(0.6, 0.7, 1, 1)
 		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 		a.DrawFunc(a)

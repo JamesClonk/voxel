@@ -22,6 +22,11 @@ type Mesh struct {
 
 type Indices []int32
 
+type Meshable interface {
+	Vertices() Vertices
+	Indices() Indices
+}
+
 func init() {
 	var b byte = 255
 	var i int32 = 1234567890
@@ -34,13 +39,18 @@ func init() {
 	}
 }
 
-func NewMesh(shader *Shader) *Mesh {
-	return &Mesh{
+func NewMesh(shader *Shader, object Meshable) *Mesh {
+	mesh := &Mesh{
 		Shader:   shader,
 		Position: mgl.Vec3{0, 0, 0},
 		Rotation: mgl.Quat{1, mgl.Vec3{0, 0, 0}},
 		Scale:    1,
+		Vertices: object.Vertices(),
+		Indices:  object.Indices(),
 	}
+	mesh.Buffer()
+
+	return mesh
 }
 
 func (m *Mesh) Buffer() {

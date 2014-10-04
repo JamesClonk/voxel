@@ -47,7 +47,7 @@ const vertexShaderSource = `
 const fragmentShaderSource = `
 	#version 130
 		uniform sampler2D texture;
-   
+
 		varying vec2 texCoord;  
 		varying float diffuse;
 		varying vec4 inColor;
@@ -61,16 +61,9 @@ func main() {
 	app := NewSimpleApp(640, 480, "Voxel", draw)
 	defer app.Destroy()
 
-	cube := NewCube(mgl.Vec4{1, 1, 1, 1})
-
 	shader = NewShader(vertexShaderSource, fragmentShaderSource)
-
-	mesh = NewMesh(shader)
-	mesh.Vertices = cube.Vertices
-	mesh.Indices = cube.Indices
-	mesh.Buffer()
-
-	texture = NewTexture(16, 16, "data/grass.png", gl.NEAREST)
+	mesh = NewMesh(shader, NewCube(mgl.Vec4{1, 1, 1, 1}))
+	texture = NewTexture("data/grass.png", gl.NEAREST)
 
 	app.Start()
 }
@@ -92,19 +85,41 @@ func draw(app *App) {
 	shader.Projection.UniformMatrix4fv(false, projection)
 
 	// transformation matrix for rotation
-	model := mgl.HomogRotate3D(float32(time), mgl.Vec3{0, 1, 0})
-	shader.Model.UniformMatrix4fv(false, model)
+	//model := mgl.HomogRotate3D(float32(time), mgl.Vec3{0, 1, 0})
+	//shader.Model.UniformMatrix4fv(false, model)
 
 	// calculate normal matrix and send to shader
-	normal := view.Mul4(model).Mat3().Inv().Transpose()
-	shader.Normal.UniformMatrix3fv(false, normal)
+	//normal := view.Mul4(model).Mat3().Inv().Transpose()
+	//shader.Normal.UniformMatrix3fv(false, normal)
 
 	//mesh.SubBuffer()
+	texture.Bind()
 	mesh.Bind()
-	texture.Bind()
-	mesh.DrawElements(gl.QUADS)
-	texture.Bind()
+
+	length := float32(10)
+	//total := length * length
+	for i := float32(1); i <= length; i++ {
+		for j := float32(1); j <= length; j++ {
+			//index := i*length + j
+
+			translate := mgl.Translate3D(-(length)+i*2, -2, -(length)+j*2-15)
+			rotate := mgl.HomogRotate3D(0, mgl.Vec3{0, 0, 1})
+			//scale := mgl.Scale3D(1-(index/total), 1-(index/total), 1-(index/total))
+
+			//model := translate.Mul4(rotate).Mul4(scale)
+			model := translate.Mul4(rotate)
+			shader.Model.UniformMatrix4fv(false, model)
+
+			//normal := view.Mul4(model).Mat3().Inv().Transpose()
+			normal := view.Mat3()
+			shader.Normal.UniformMatrix3fv(false, normal)
+
+			mesh.DrawElements(gl.QUADS)
+		}
+	}
+
 	mesh.Unbind()
+	texture.Bind()
 
 	shader.Unbind()
 

@@ -3,8 +3,8 @@ package lib
 import mgl "github.com/go-gl/mathgl/mgl32"
 
 type Cube struct {
-	Vertices Vertices
-	Indices  Indices
+	vertices Vertices
+	indices  Indices
 }
 
 func NewCube(baseColor mgl.Vec4) *Cube {
@@ -81,4 +81,12 @@ func NewCube(baseColor mgl.Vec4) *Cube {
 	}
 
 	return &Cube{vertices, indices}
+}
+
+func (c *Cube) Vertices() Vertices {
+	return c.vertices
+}
+
+func (c *Cube) Indices() Indices {
+	return c.indices
 }
